@@ -125,35 +125,25 @@ App runs at `http://localhost:5173`.
 - **Sensor Type:** `[A-Z]{3}\d{3}-[A-Z]` (e.g. `SVT300-A`)
 - **Serial Number:** `S/N:\s*(\d+)` (e.g. `S/N: 00871`)
 
-## Deployment
+## Production readiness
 
-### Backend (Render)
+| Area | Features |
+|------|----------|
+| **Backend** | Helmet, compression, rate limiting, strict CORS in production, graceful shutdown, health check |
+| **Frontend** | Optimized Vite build (code splitting), security headers via `vercel.json`, production env validation |
+| **Deploy** | Render (`render.yaml`) + Vercel (`vercel.json`) + MongoDB Atlas |
 
-1. Push the repo to GitHub.
-2. Create a new **Web Service** on [Render](https://render.com).
-3. Set **Root Directory** to `backend`.
-4. **Build Command:** `npm install`
-5. **Start Command:** `npm start`
-6. Add environment variables:
-   - `MONGO_URI` – your Atlas connection string
-   - `CLIENT_URL` – your Vercel frontend URL (e.g. `https://your-app.vercel.app`)
-   - `PORT` – Render sets this automatically; optional override
+**Full step-by-step guide:** see [DEPLOYMENT.md](./DEPLOYMENT.md)
 
-### Frontend (Vercel)
+### Quick deploy summary
 
-1. Import the GitHub repo on [Vercel](https://vercel.com).
-2. Set **Root Directory** to `frontend`.
-3. **Framework Preset:** Vite
-4. Add environment variable:
-   - `VITE_API_URL` – your Render API URL + `/api` (e.g. `https://your-api.onrender.com/api`)
-5. Deploy.
+| Platform | Root | Key env vars |
+|----------|------|----------------|
+| **Render** (API) | `backend` | `NODE_ENV=production`, `MONGO_URI`, `CLIENT_URL` |
+| **Vercel** (app) | `frontend` | `VITE_API_URL=https://your-api.onrender.com/api` |
+| **Atlas** (DB) | — | Allow `0.0.0.0/0` for Render |
 
-### Post-Deploy Checklist
-
-- [ ] MongoDB Atlas network access allows Render/Vercel IPs (or `0.0.0.0/0`)
-- [ ] `CLIENT_URL` matches the deployed frontend URL
-- [ ] `VITE_API_URL` points to the deployed backend `/api`
-- [ ] Site served over HTTPS for mobile camera access
+Health check: `GET /api/health`
 
 ## Environment Variables
 
@@ -161,9 +151,10 @@ App runs at `http://localhost:5173`.
 
 | Variable     | Description                          |
 | ------------ | ------------------------------------ |
+| `NODE_ENV`   | `production` on Render               |
 | `PORT`       | Server port (default: 5000)          |
 | `MONGO_URI`  | MongoDB Atlas connection string      |
-| `CLIENT_URL` | Frontend URL for CORS                |
+| `CLIENT_URL` | Comma-separated frontend URLs for CORS |
 
 ### Frontend (`frontend/.env`)
 

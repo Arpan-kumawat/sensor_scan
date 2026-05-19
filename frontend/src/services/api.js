@@ -1,10 +1,18 @@
 import axios from 'axios';
 
 const resolveApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  const envUrl = import.meta.env.VITE_API_URL?.trim();
+
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
   }
-  // Same-origin /api works on mobile via Vite HTTPS proxy (see vite.config.js)
+
+  if (import.meta.env.PROD) {
+    console.error(
+      'VITE_API_URL is required in production. Set it in Vercel environment variables.'
+    );
+  }
+
   return '/api';
 };
 
@@ -17,6 +25,19 @@ const api = axios.create({
   },
   timeout: 30000,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (!error.response) {
+      error.message =
+        import.meta.env.PROD
+          ? 'Cannot reach API server. Check VITE_API_URL and backend deployment.'
+          : error.message || 'Network error';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const getSensors = async ({ page = 1, limit = 10, search = '' } = {}) => {
   const { data } = await api.get('/sensors', {

@@ -1,11 +1,14 @@
 services:
   - type: web
     name: sensor-inventory-api
-    env: node
+    runtime: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: MONGO_URI
         sync: false
       - key: CLIENT_URL

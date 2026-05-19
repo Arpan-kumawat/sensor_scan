@@ -1,5 +1,18 @@
+const { config } = require('../config/env');
+
 const errorHandler = (err, _req, res, _next) => {
-  console.error(err);
+  if (config.isProduction) {
+    console.error(err.message);
+  } else {
+    console.error(err);
+  }
+
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      success: false,
+      message: 'Origin not allowed',
+    });
+  }
 
   if (err.name === 'CastError') {
     return res.status(400).json({
@@ -18,7 +31,7 @@ const errorHandler = (err, _req, res, _next) => {
 
   res.status(err.statusCode || 500).json({
     success: false,
-    message: err.message || 'Internal server error',
+    message: config.isProduction ? 'Internal server error' : err.message || 'Internal server error',
   });
 };
 

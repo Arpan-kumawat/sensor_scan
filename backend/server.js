@@ -1,56 +1,97 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
 const mongoose = require('mongoose');
+const { config, validateEnv } = require('./config/env');
 const sensorRoutes = require('./routes/sensorRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const notFound = require('./middleware/notFound');
+const { apiLimiter } = require('./middleware/rateLimiter');
+
+validateEnv();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-].filter(Boolean);
+if (config.isProduction) {
+  app.set('trust proxy', 1);
+}
 
+app.use(helmet());
+app.use(compression());
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, true);
+      if (!origin) {
+        return callback(null, true);
       }
+      if (config.allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      if (!config.isProduction) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
   })
 );
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '2mb' }));
+app.use('/api', apiLimiter);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    environment: config.nodeEnv,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'Sensor Inventory API',
+    health: '/api/health',
+    docs: 'See README for API routes',
+  });
 });
 
 app.use('/api/sensors', sensorRoutes);
+app.use(notFound);
 app.use(errorHandler);
 
-const startServer = async () => {
-  if (!process.env.MONGO_URI) {
-    console.error('MONGO_URI is not defined in environment variables');
-    process.exit(1);
-  }
+let server;
 
+const startServer = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB Atlas');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    await mongoose.connect(config.mongoUri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+    });
+    console.log('Connected to MongoDB');
+
+    server = app.listen(config.port, () => {
+      console.log(`Server running on port ${config.port} (${config.nodeEnv})`);
     });
   } catch (error) {
     console.error('Failed to start server:', error.message);
     process.exit(1);
   }
 };
+
+const shutdown = async (signal) => {
+  console.log(`${signal} received. Shutting down gracefully...`);
+  if (server) {
+    server.close(async () => {
+      await mongoose.connection.close();
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 startServer();

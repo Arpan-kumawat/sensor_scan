@@ -29,6 +29,5 @@ const sensorSchema = new mongoose.Schema(
 );
 
 sensorSchema.index({ sensorType: 1 });
-sensorSchema.index({ serialNumber: 1 });
 
 module.exports = mongoose.model('Sensor', sensorSchema);
