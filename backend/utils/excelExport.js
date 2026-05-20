@@ -33,4 +33,35 @@ const buildSensorWorkbook = async (sensors) => {
   return workbook.xlsx.writeBuffer();
 };
 
-module.exports = { buildSensorWorkbook };
+const buildGatewayWorkbook = async (gateways) => {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Gateway Inventory');
+
+  sheet.columns = [
+    { header: 'Gateway Serial Number', key: 'serialNumber', width: 22 },
+    { header: 'Manufacturer', key: 'manufacturer', width: 22 },
+    { header: 'Scanned At', key: 'scannedAt', width: 24 },
+  ];
+
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF1E293B' },
+  };
+  sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+  gateways.forEach((gateway) => {
+    sheet.addRow({
+      serialNumber: gateway.serialNumber,
+      manufacturer: gateway.manufacturer || '',
+      scannedAt: gateway.scannedAt
+        ? new Date(gateway.scannedAt).toLocaleString()
+        : '',
+    });
+  });
+
+  return workbook.xlsx.writeBuffer();
+};
+
+module.exports = { buildSensorWorkbook, buildGatewayWorkbook };

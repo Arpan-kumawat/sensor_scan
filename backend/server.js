@@ -5,6 +5,7 @@ const compression = require('compression');
 const mongoose = require('mongoose');
 const { config, validateEnv } = require('./config/env');
 const sensorRoutes = require('./routes/sensorRoutes');
+const gatewayRoutes = require('./routes/gatewayRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 const { apiLimiter } = require('./middleware/rateLimiter');
@@ -57,6 +58,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use('/api/sensors', sensorRoutes);
+app.use('/api/gateways', gatewayRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

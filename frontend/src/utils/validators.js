@@ -1,4 +1,4 @@
-import { SENSOR_TYPE_REGEX, SERIAL_NUMBER_REGEX } from './constants';
+import { GATEWAY_SERIAL_REGEX, SENSOR_TYPE_REGEX, SERIAL_NUMBER_REGEX } from './constants';
 
 export const extractSensorData = (text) => {
   if (!text || typeof text !== 'string') {
@@ -33,6 +33,21 @@ export const validateSensorForm = ({ sensorType, serialNumber }) => {
     errors.serialNumber = 'Serial number is required';
   } else if (!/^\d+$/.test(serialNumber.trim())) {
     errors.serialNumber = 'Serial must be numeric digits';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+export const validateGatewayForm = ({ serialNumber }) => {
+  const errors = {};
+
+  if (!serialNumber?.trim()) {
+    errors.serialNumber = 'Gateway serial number is required';
+  } else if (!GATEWAY_SERIAL_REGEX.test(serialNumber.trim())) {
+    errors.serialNumber = 'Invalid format (e.g. GU300S-00104)';
   }
 
   return {

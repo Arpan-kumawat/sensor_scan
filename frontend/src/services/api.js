@@ -63,4 +63,28 @@ export const exportSensorsExcel = async () => {
   return response.data;
 };
 
+export const getGateways = async ({ page = 1, limit = 10, search = '' } = {}) => {
+  const { data } = await api.get('/gateways', {
+    params: { page, limit, search },
+  });
+  return data;
+};
+
+export const createGateway = async (payload) => {
+  const { data } = await api.post('/gateways', payload);
+  return data;
+};
+
+export const deleteGateway = async (id) => {
+  const { data } = await api.delete(`/gateways/${id}`);
+  return data;
+};
+
+export const exportGatewaysExcel = async () => {
+  const response = await api.get('/gateways/export', {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
 export default api;

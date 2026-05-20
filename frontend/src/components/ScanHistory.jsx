@@ -28,9 +28,21 @@ export const ScanHistory = ({ history, onClear }) => {
             className="flex items-center justify-between rounded-xl bg-slate-100/80 px-3 py-2 text-sm dark:bg-slate-800/60"
           >
             <div>
-              <span className="font-medium">{item.sensorType}</span>
-              <span className="mx-2 text-slate-400">·</span>
-              <span className="text-slate-600 dark:text-slate-300">S/N {item.serialNumber}</span>
+              {item.mode === 'gateway' ? (
+                <>
+                  <span className="font-medium text-violet-600 dark:text-violet-400">Gateway</span>
+                  <span className="mx-2 text-slate-400">·</span>
+                  <span className="font-mono text-slate-600 dark:text-slate-300">
+                    {item.serialNumber}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">{item.sensorType}</span>
+                  <span className="mx-2 text-slate-400">·</span>
+                  <span className="text-slate-600 dark:text-slate-300">S/N {item.serialNumber}</span>
+                </>
+              )}
             </div>
             <div className="text-right text-xs text-slate-500">
               <div>{formatRelative(item.timestamp)}</div>

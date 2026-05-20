@@ -22,4 +22,15 @@ const createSensorLimiter = rateLimit({
   },
 });
 
-module.exports = { apiLimiter, createSensorLimiter };
+const createGatewayLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many gateway scan submissions. Please wait a moment.',
+  },
+});
+
+module.exports = { apiLimiter, createSensorLimiter, createGatewayLimiter };

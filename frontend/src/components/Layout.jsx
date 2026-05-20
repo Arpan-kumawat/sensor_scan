@@ -30,7 +30,7 @@ export const Layout = () => {
             <div>
               <h1 className="text-base font-bold sm:text-lg">Sensor Inventory</h1>
               <p className="hidden text-xs text-slate-500 sm:block dark:text-slate-400">
-                OCR label scanning
+                OCR labels & gateway barcodes
               </p>
             </div>
           </div>

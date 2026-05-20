@@ -1,6 +1,6 @@
 # Sensor Inventory Scanner
 
-Full-stack MERN web application for managing sensor box inventory using OCR from camera images. Scan labels to extract sensor type (e.g. `SVT300-A`) and serial number (`S/N: 00871`), then store records in MongoDB Atlas.
+Full-stack MERN web application for managing sensor box inventory using OCR from camera images, plus gateway units scanned from barcodes (e.g. `GU300S-00104`). Sensor labels yield type + serial (`S/N: 00871`); gateways are stored in a separate collection with Excel export.
 
 ## Tech Stack
 
@@ -14,10 +14,11 @@ Full-stack MERN web application for managing sensor box inventory using OCR from
 
 - Live camera preview with manual/auto capture
 - OCR with grayscale, contrast boost, and center crop preprocessing
-- Regex validation for sensor type and serial number
-- Inventory table with search, pagination, delete
-- Duplicate serial number protection
-- Excel export
+- Gateway barcode scan (native `BarcodeDetector` in supported browsers) or manual entry
+- Regex validation for sensor type, sensor serial, and gateway serial
+- Inventory tables (sensors / gateways) with search, pagination, delete
+- Duplicate protection per collection
+- Excel export per inventory type
 - Dark/light mode, glassmorphism UI, mobile-friendly layout
 - Local scan history
 
@@ -112,7 +113,11 @@ App runs at `http://localhost:5173`.
 | GET    | `/api/sensors`        | List sensors (search, paginate)|
 | POST   | `/api/sensors`        | Create sensor                  |
 | DELETE | `/api/sensors/:id`    | Delete sensor                  |
-| GET    | `/api/sensors/export` | Download Excel file            |
+| GET    | `/api/sensors/export` | Download sensor Excel file     |
+| GET    | `/api/gateways`       | List gateways (search, paginate)|
+| POST   | `/api/gateways`       | Create gateway                 |
+| DELETE | `/api/gateways/:id`   | Delete gateway                 |
+| GET    | `/api/gateways/export`| Download gateway Excel file    |
 
 ### Query Parameters (GET `/api/sensors`)
 
@@ -120,10 +125,21 @@ App runs at `http://localhost:5173`.
 - `limit` – items per page (default: 10, max: 100)
 - `search` – filter by sensor type, serial, or manufacturer
 
+### Query Parameters (GET `/api/gateways`)
+
+- `page` – page number (default: 1)
+- `limit` – items per page (default: 10, max: 100)
+- `search` – filter by gateway serial or manufacturer
+
 ## OCR Patterns
 
 - **Sensor Type:** `[A-Z]{3}\d{3}-[A-Z]` (e.g. `SVT300-A`)
 - **Serial Number:** `S/N:\s*(\d+)` (e.g. `S/N: 00871`)
+
+## Gateway serial format
+
+- **Pattern:** `/^[A-Z0-9]{3,}-[A-Z0-9]{3,}$/i` (e.g. `GU300S-00104`)
+- Barcode scanning works best in **Chrome** or **Edge** (Barcode Detection API). Other browsers can use **Enter manually** or a USB wedge scanner into the form field.
 
 ## Production readiness
 
