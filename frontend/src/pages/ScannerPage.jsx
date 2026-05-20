@@ -9,14 +9,18 @@ import { useToast } from '../hooks/useToast';
 import { createGateway, createSensor } from '../services/api';
 import {
   createGatewayBarcodeDetector,
-  detectBarcodeFromVideo,
+  detectBarcodeFromCanvas,
 } from '../utils/barcodeScan';
 import { DUPLICATE_GATEWAY_MESSAGE, DUPLICATE_MESSAGE } from '../utils/constants';
 import { captureFrameFromVideo } from '../utils/imageProcessing';
-import { runOcrOnCanvas } from '../utils/ocr';
+import { runGatewayOcrOnCanvas, runOcrOnCanvas } from '../utils/ocr';
 import { addToScanHistory, clearScanHistory, getScanHistory } from '../utils/scanHistory';
 import { isSecureContext } from '../utils/cameraSupport';
-import { validateGatewayForm, validateSensorForm } from '../utils/validators';
+import {
+  isGatewaySerialFormat,
+  validateGatewayForm,
+  validateSensorForm,
+} from '../utils/validators';
 
 const AUTO_SCAN_INTERVAL_MS = 3500;
 
@@ -43,6 +47,8 @@ export const ScannerPage = () => {
   const [gatewayForm, setGatewayForm] = useState({ serialNumber: '', manufacturer: '' });
   const [gatewayFormErrors, setGatewayFormErrors] = useState({});
   const [gatewayScanning, setGatewayScanning] = useState(false);
+  const [gatewayOcrRunning, setGatewayOcrRunning] = useState(false);
+  const [gatewayOcrProgress, setGatewayOcrProgress] = useState(0);
 
   const [saving, setSaving] = useState(false);
   const [autoScan, setAutoScan] = useState(false);
@@ -104,47 +110,68 @@ export const ScannerPage = () => {
   }, [ocrRunning, reviewKind, showToast, stopCamera, videoRef]);
 
   const performGatewayBarcodeScan = useCallback(async () => {
-    if (!videoRef.current || scanLockRef.current || gatewayScanning || reviewKind) return;
+    if (!videoRef.current || scanLockRef.current || gatewayScanning || gatewayOcrRunning || reviewKind)
+      return;
     if (videoRef.current.videoWidth === 0) return;
 
     scanLockRef.current = true;
     setGatewayScanning(true);
+    setGatewayOcrProgress(0);
 
     try {
+      const canvas = captureFrameFromVideo(videoRef.current);
+      const previewDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      let serial = null;
+      let fromBarcode = false;
+
       if (!barcodeDetectorRef.current) {
         barcodeDetectorRef.current = await createGatewayBarcodeDetector();
       }
       const detector = barcodeDetectorRef.current;
-      if (!detector) {
+
+      if (detector) {
+        const barRaw = await detectBarcodeFromCanvas(canvas, detector);
+        if (isGatewaySerialFormat(barRaw)) {
+          serial = barRaw.trim();
+          fromBarcode = true;
+        }
+      }
+
+      if (!serial) {
+        setGatewayOcrRunning(true);
+        const ocr = await runGatewayOcrOnCanvas(canvas, setGatewayOcrProgress);
+        setGatewayOcrRunning(false);
+        if (ocr.isValid && ocr.serialNumber) {
+          serial = ocr.serialNumber.trim();
+          fromBarcode = false;
+        }
+      }
+
+      if (serial) {
+        setPreviewImage(previewDataUrl);
+        setGatewayForm({ serialNumber: serial, manufacturer: '' });
+        setGatewayFormErrors({});
+        setReviewKind('gateway');
+        stopCamera();
         showToast(
-          'Barcode scanning needs a supported browser (Chrome or Edge). Use Enter manually.',
+          fromBarcode ? 'Barcode read' : 'Serial read from label',
+          'success'
+        );
+      } else {
+        showToast(
+          'Could not read barcode or serial text. Improve lighting and angle, or enter manually.',
           'warning'
         );
-        scanLockRef.current = false;
-        return;
       }
-
-      const raw = await detectBarcodeFromVideo(videoRef.current, detector);
-      if (!raw) {
-        showToast('No barcode detected. Adjust distance or lighting, then try again.', 'warning');
-        scanLockRef.current = false;
-        return;
-      }
-
-      const canvas = captureFrameFromVideo(videoRef.current);
-      setPreviewImage(canvas.toDataURL('image/jpeg', 0.85));
-      setGatewayForm({ serialNumber: raw, manufacturer: '' });
-      setGatewayFormErrors({});
-      setReviewKind('gateway');
-      stopCamera();
-      showToast('Barcode read', 'success');
     } catch {
-      showToast('Barcode scan failed. Try again or enter manually.', 'error');
+      setGatewayOcrRunning(false);
+      showToast('Scan failed. Try again or enter manually.', 'error');
     } finally {
       setGatewayScanning(false);
       scanLockRef.current = false;
     }
-  }, [gatewayScanning, reviewKind, showToast, stopCamera, videoRef]);
+  }, [gatewayScanning, gatewayOcrRunning, reviewKind, showToast, stopCamera, videoRef]);
 
   useEffect(() => {
     if (
@@ -274,7 +301,8 @@ export const ScannerPage = () => {
   };
 
   const showCamera = !reviewKind;
-  const busyOverlay = scanTab === 'sensor' ? ocrRunning : gatewayScanning;
+  const busyOverlay =
+    scanTab === 'sensor' ? ocrRunning : gatewayScanning || gatewayOcrRunning;
 
   return (
     <div className="space-y-6">
@@ -282,8 +310,8 @@ export const ScannerPage = () => {
         <h2 className="text-2xl font-bold">Scan inventory</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           <strong>Sensor:</strong> OCR reads the label (type + S/N).{' '}
-          <strong>Gateway:</strong> scan a barcode with serial like GU300S-00104, or enter it
-          manually.
+          <strong>Gateway:</strong> scans the barcode first; if that fails, OCR reads the printed
+          serial below (e.g. GU300S-00104). You can also enter it manually.
         </p>
       </div>
 
@@ -366,7 +394,10 @@ export const ScannerPage = () => {
                 )}
 
                 {scanTab === 'sensor' && ocrRunning && <OcrLoader progress={ocrProgress} />}
-                {scanTab === 'gateway' && gatewayScanning && (
+                {scanTab === 'gateway' && gatewayOcrRunning && (
+                  <OcrLoader progress={gatewayOcrProgress} />
+                )}
+                {scanTab === 'gateway' && gatewayScanning && !gatewayOcrRunning && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 text-sm text-slate-200">
                     <p className="font-medium">Reading barcode…</p>
                   </div>
@@ -398,7 +429,7 @@ export const ScannerPage = () => {
                         <button
                           type="button"
                           onClick={performGatewayBarcodeScan}
-                          disabled={gatewayScanning}
+                          disabled={gatewayScanning || gatewayOcrRunning}
                           className="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50"
                         >
                           Scan barcode
@@ -406,7 +437,7 @@ export const ScannerPage = () => {
                         <button
                           type="button"
                           onClick={openGatewayManualEntry}
-                          disabled={gatewayScanning}
+                          disabled={gatewayScanning || gatewayOcrRunning}
                           className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium dark:border-slate-600"
                         >
                           Enter manually

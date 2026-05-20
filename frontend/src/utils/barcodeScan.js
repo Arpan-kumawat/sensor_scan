@@ -47,3 +47,21 @@ export const detectBarcodeFromVideo = async (video, detector) => {
     return null;
   }
 };
+
+/**
+ * Same as live video, but uses a single captured frame (barcode + printed text align on one snapshot).
+ * @param {HTMLCanvasElement} canvas
+ * @param {BarcodeDetector} detector
+ * @returns {Promise<string | null>} raw barcode value
+ */
+export const detectBarcodeFromCanvas = async (canvas, detector) => {
+  if (!canvas || !detector) return null;
+  try {
+    const barcodes = await detector.detect(canvas);
+    if (!barcodes?.length) return null;
+    const raw = barcodes[0]?.rawValue;
+    return typeof raw === 'string' ? raw.trim() : null;
+  } catch {
+    return null;
+  }
+};

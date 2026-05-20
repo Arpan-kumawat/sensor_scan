@@ -139,7 +139,7 @@ App runs at `http://localhost:5173`.
 ## Gateway serial format
 
 - **Pattern:** `/^[A-Z0-9]{3,}-[A-Z0-9]{3,}$/i` (e.g. `GU300S-00104`)
-- Barcode scanning works best in **Chrome** or **Edge** (Barcode Detection API). Other browsers can use **Enter manually** or a USB wedge scanner into the form field.
+- **Scan flow:** Tries the barcode on one camera frame; if that does not yield a valid gateway-shaped string, **OCR** reads the printed serial (often below the barcode). Other browsers can use **Enter manually** or a USB wedge scanner into the form field. Barcode detection works best in **Chrome** or **Edge** (Barcode Detection API).
 
 ## Production readiness
 
