@@ -292,12 +292,25 @@ export const ScannerPage = () => {
     startCamera();
   };
 
+  const openSensorManualEntry = () => {
+    stopCamera();
+    setPreviewImage(null);
+    setForm({ sensorType: '', serialNumber: '', manufacturer: '' });
+    setFormErrors({});
+    setReviewKind('sensor');
+  };
+
   const openGatewayManualEntry = () => {
     stopCamera();
     setPreviewImage(null);
     setGatewayForm({ serialNumber: '', manufacturer: '' });
     setGatewayFormErrors({});
     setReviewKind('gateway');
+  };
+
+  const openManualEntry = () => {
+    if (scanTab === 'sensor') openSensorManualEntry();
+    else openGatewayManualEntry();
   };
 
   const showCamera = !reviewKind;
@@ -309,9 +322,9 @@ export const ScannerPage = () => {
       <div className="animate-slide-up">
         <h2 className="text-2xl font-bold">Scan inventory</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          <strong>Sensor:</strong> OCR reads the label (type + S/N).{' '}
+          <strong>Sensor:</strong> OCR reads the label (type + S/N), or enter details manually.{' '}
           <strong>Gateway:</strong> scans the barcode first; if that fails, OCR reads the printed
-          serial below (e.g. GU300S-00104). You can also enter it manually.
+          serial below (e.g. GU300S-00104). You can also enter either type manually.
         </p>
       </div>
 
@@ -406,24 +419,43 @@ export const ScannerPage = () => {
 
               <div className="flex flex-wrap gap-2">
                 {!isActive ? (
-                  <button
-                    type="button"
-                    onClick={startCamera}
-                    className="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600"
-                  >
-                    Start Camera
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600"
+                    >
+                      Start Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openManualEntry}
+                      className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium dark:border-slate-600"
+                    >
+                      Enter manually
+                    </button>
+                  </>
                 ) : (
                   <>
                     {scanTab === 'sensor' ? (
-                      <button
-                        type="button"
-                        onClick={performOcrScan}
-                        disabled={ocrRunning}
-                        className="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50"
-                      >
-                        Capture & Scan
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={performOcrScan}
+                          disabled={ocrRunning}
+                          className="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50"
+                        >
+                          Capture & Scan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openSensorManualEntry}
+                          disabled={ocrRunning}
+                          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium dark:border-slate-600"
+                        >
+                          Enter manually
+                        </button>
+                      </>
                     ) : (
                       <>
                         <button
@@ -484,7 +516,11 @@ export const ScannerPage = () => {
               ) : (
                 <div className="flex aspect-[4/3] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 text-center text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-800/40 dark:text-slate-400">
                   <p className="font-medium text-slate-600 dark:text-slate-300">Manual entry</p>
-                  <p className="mt-1 max-w-xs px-4">Type the gateway serial from the label or a USB scanner.</p>
+                  <p className="mt-1 max-w-xs px-4">
+                    {reviewKind === 'sensor'
+                      ? 'Type sensor type and serial number from the label.'
+                      : 'Type the gateway serial from the label or a USB scanner.'}
+                  </p>
                 </div>
               )}
               {reviewKind === 'sensor' && (
