@@ -8,6 +8,7 @@ const buildSensorWorkbook = async (sensors) => {
     { header: 'Sensor Type', key: 'sensorType', width: 18 },
     { header: 'Serial Number', key: 'serialNumber', width: 18 },
     { header: 'Manufacturer', key: 'manufacturer', width: 22 },
+    { header: 'Comments', key: 'comments', width: 32 },
     { header: 'Scanned At', key: 'scannedAt', width: 24 },
   ];
 
@@ -24,6 +25,7 @@ const buildSensorWorkbook = async (sensors) => {
       sensorType: sensor.sensorType,
       serialNumber: sensor.serialNumber,
       manufacturer: sensor.manufacturer || '',
+      comments: sensor.comments || '',
       scannedAt: sensor.scannedAt
         ? new Date(sensor.scannedAt).toLocaleString()
         : '',
@@ -40,6 +42,7 @@ const buildGatewayWorkbook = async (gateways) => {
   sheet.columns = [
     { header: 'Gateway Serial Number', key: 'serialNumber', width: 22 },
     { header: 'Manufacturer', key: 'manufacturer', width: 22 },
+    { header: 'Comments', key: 'comments', width: 32 },
     { header: 'Scanned At', key: 'scannedAt', width: 24 },
   ];
 
@@ -55,6 +58,7 @@ const buildGatewayWorkbook = async (gateways) => {
     sheet.addRow({
       serialNumber: gateway.serialNumber,
       manufacturer: gateway.manufacturer || '',
+      comments: gateway.comments || '',
       scannedAt: gateway.scannedAt
         ? new Date(gateway.scannedAt).toLocaleString()
         : '',

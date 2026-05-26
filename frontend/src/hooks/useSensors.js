@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createSensor, deleteSensor, exportSensorsExcel, getSensors } from '../services/api';
+import {
+  createSensor,
+  deleteSensor,
+  exportSensorsExcel,
+  getSensors,
+  updateSensor,
+} from '../services/api';
 import { DUPLICATE_MESSAGE } from '../utils/constants';
 
 export const useSensors = (initialPage = 1, pageSize = 10) => {
@@ -49,6 +55,14 @@ export const useSensors = (initialPage = 1, pageSize = 10) => {
     await fetchSensors();
   };
 
+  const updateSensorComments = async (id, comments) => {
+    const result = await updateSensor(id, { comments });
+    setSensors((prev) =>
+      prev.map((sensor) => (sensor._id === id ? result.data : sensor))
+    );
+    return result.data;
+  };
+
   const exportExcel = async () => {
     const blob = await exportSensorsExcel();
     const url = window.URL.createObjectURL(blob);
@@ -74,6 +88,7 @@ export const useSensors = (initialPage = 1, pageSize = 10) => {
     fetchSensors,
     saveSensor,
     removeSensor,
+    updateSensorComments,
     exportExcel,
   };
 };

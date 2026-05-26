@@ -4,6 +4,7 @@ import {
   deleteGateway,
   exportGatewaysExcel,
   getGateways,
+  updateGateway,
 } from '../services/api';
 import { DUPLICATE_GATEWAY_MESSAGE } from '../utils/constants';
 
@@ -59,6 +60,14 @@ export const useGateways = (initialPage = 1, pageSize = 10) => {
     await fetchGateways();
   };
 
+  const updateGatewayComments = async (id, comments) => {
+    const result = await updateGateway(id, { comments });
+    setGateways((prev) =>
+      prev.map((gateway) => (gateway._id === id ? result.data : gateway))
+    );
+    return result.data;
+  };
+
   const exportExcel = async () => {
     const blob = await exportGatewaysExcel();
     const url = window.URL.createObjectURL(blob);
@@ -84,6 +93,7 @@ export const useGateways = (initialPage = 1, pageSize = 10) => {
     fetchGateways,
     saveGateway,
     removeGateway,
+    updateGatewayComments,
     exportExcel,
   };
 };

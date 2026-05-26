@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CommentsCell } from '../components/CommentsCell';
 import { GlassCard } from '../components/GlassCard';
 import { TableSkeleton } from '../components/Skeleton';
 import { useGateways } from '../hooks/useGateways';
@@ -26,6 +27,7 @@ export const InventoryPage = () => {
     pagination: sensorPagination,
     totalCount: sensorTotalCount,
     removeSensor,
+    updateSensorComments,
     exportExcel: exportSensorsExcel,
   } = sensorsHook;
 
@@ -40,6 +42,7 @@ export const InventoryPage = () => {
     pagination: gatewayPagination,
     totalCount: gatewayTotalCount,
     removeGateway,
+    updateGatewayComments,
     exportExcel: exportGatewaysExcel,
   } = gatewaysHook;
 
@@ -60,6 +63,26 @@ export const InventoryPage = () => {
     e.preventDefault();
     setGatewaySearch(gatewaySearchInput);
     setGatewayPage(1);
+  };
+
+  const handleSaveSensorComments = async (id, comments) => {
+    try {
+      await updateSensorComments(id, comments);
+      showToast('Comments saved', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to save comments', 'error');
+      throw err;
+    }
+  };
+
+  const handleSaveGatewayComments = async (id, comments) => {
+    try {
+      await updateGatewayComments(id, comments);
+      showToast('Comments saved', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to save comments', 'error');
+      throw err;
+    }
   };
 
   const handleDeleteSensor = async (id) => {
@@ -166,7 +189,7 @@ export const InventoryPage = () => {
                 type="search"
                 value={sensorSearchInput}
                 onChange={(e) => setSensorSearchInput(e.target.value)}
-                placeholder="Search by type or serial..."
+                placeholder="Search by type, serial, or comments..."
                 className="flex-1 rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500/30 dark:border-slate-600 dark:bg-slate-800/80"
               />
               <button
@@ -232,12 +255,13 @@ export const InventoryPage = () => {
           ) : (
             <>
               <div className="overflow-x-auto rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                <table className="w-full min-w-[600px] text-left text-sm">
+                <table className="w-full min-w-[720px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-200/60 bg-slate-50/80 dark:border-slate-700/60 dark:bg-slate-800/50">
                       <th className="px-4 py-3 font-semibold">Sensor Type</th>
                       <th className="px-4 py-3 font-semibold">Serial Number</th>
                       <th className="px-4 py-3 font-semibold">Manufacturer</th>
+                      <th className="px-4 py-3 font-semibold">Comments</th>
                       <th className="px-4 py-3 font-semibold">Scanned At</th>
                       <th className="px-4 py-3 font-semibold">Actions</th>
                     </tr>
@@ -254,6 +278,13 @@ export const InventoryPage = () => {
                         </td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                           {sensor.manufacturer || '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <CommentsCell
+                            value={sensor.comments}
+                            onSave={(comments) => handleSaveSensorComments(sensor._id, comments)}
+                            disabled={deletingSensorId === sensor._id}
+                          />
                         </td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                           {formatDateTime(sensor.scannedAt)}
@@ -313,7 +344,7 @@ export const InventoryPage = () => {
                 type="search"
                 value={gatewaySearchInput}
                 onChange={(e) => setGatewaySearchInput(e.target.value)}
-                placeholder="Search gateway serial..."
+                placeholder="Search serial, manufacturer, or comments..."
                 className="flex-1 rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-slate-600 dark:bg-slate-800/80"
               />
               <button
@@ -379,11 +410,12 @@ export const InventoryPage = () => {
           ) : (
             <>
               <div className="overflow-x-auto rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                <table className="w-full min-w-[520px] text-left text-sm">
+                <table className="w-full min-w-[640px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-200/60 bg-slate-50/80 dark:border-slate-700/60 dark:bg-slate-800/50">
                       <th className="px-4 py-3 font-semibold">Gateway serial</th>
                       <th className="px-4 py-3 font-semibold">Manufacturer</th>
+                      <th className="px-4 py-3 font-semibold">Comments</th>
                       <th className="px-4 py-3 font-semibold">Scanned At</th>
                       <th className="px-4 py-3 font-semibold">Actions</th>
                     </tr>
@@ -399,6 +431,13 @@ export const InventoryPage = () => {
                         </td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                           {gateway.manufacturer || '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <CommentsCell
+                            value={gateway.comments}
+                            onSave={(comments) => handleSaveGatewayComments(gateway._id, comments)}
+                            disabled={deletingGatewayId === gateway._id}
+                          />
                         </td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                           {formatDateTime(gateway.scannedAt)}

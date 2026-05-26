@@ -54,7 +54,7 @@ const getGateways = async (req, res, next) => {
     const filter = {};
     if (search) {
       const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [{ serialNumber: regex }, { manufacturer: regex }];
+      filter.$or = [{ serialNumber: regex }, { manufacturer: regex }, { comments: regex }];
     }
 
     const skip = (page - 1) * limit;
@@ -75,6 +75,40 @@ const getGateways = async (req, res, next) => {
         totalPages: Math.ceil(total / limit) || 1,
       },
       totalCount: totalAll,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateGateway = async (req, res, next) => {
+  try {
+    if (!('comments' in req.body)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Comments field is required',
+      });
+    }
+
+    const comments = typeof req.body.comments === 'string' ? req.body.comments.trim() : '';
+
+    const gateway = await Gateway.findByIdAndUpdate(
+      req.params.id,
+      { comments },
+      { new: true, runValidators: true }
+    );
+
+    if (!gateway) {
+      return res.status(404).json({
+        success: false,
+        message: 'Gateway not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Gateway updated successfully',
+      data: gateway,
     });
   } catch (error) {
     next(error);
@@ -123,6 +157,7 @@ const exportGateways = async (req, res, next) => {
 module.exports = {
   createGateway,
   getGateways,
+  updateGateway,
   deleteGateway,
   exportGateways,
 };

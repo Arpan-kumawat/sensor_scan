@@ -55,7 +55,12 @@ const getSensors = async (req, res, next) => {
     const filter = {};
     if (search) {
       const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [{ sensorType: regex }, { serialNumber: regex }, { manufacturer: regex }];
+      filter.$or = [
+        { sensorType: regex },
+        { serialNumber: regex },
+        { manufacturer: regex },
+        { comments: regex },
+      ];
     }
 
     const skip = (page - 1) * limit;
@@ -76,6 +81,40 @@ const getSensors = async (req, res, next) => {
         totalPages: Math.ceil(total / limit) || 1,
       },
       totalCount: totalAll,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateSensor = async (req, res, next) => {
+  try {
+    if (!('comments' in req.body)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Comments field is required',
+      });
+    }
+
+    const comments = typeof req.body.comments === 'string' ? req.body.comments.trim() : '';
+
+    const sensor = await Sensor.findByIdAndUpdate(
+      req.params.id,
+      { comments },
+      { new: true, runValidators: true }
+    );
+
+    if (!sensor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sensor not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Sensor updated successfully',
+      data: sensor,
     });
   } catch (error) {
     next(error);
@@ -124,6 +163,7 @@ const exportSensors = async (req, res, next) => {
 module.exports = {
   createSensor,
   getSensors,
+  updateSensor,
   deleteSensor,
   exportSensors,
 };

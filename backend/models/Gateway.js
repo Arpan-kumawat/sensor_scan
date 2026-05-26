@@ -13,6 +13,12 @@ const gatewaySchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    comments: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: [500, 'Comments cannot exceed 500 characters'],
+    },
     scannedAt: {
       type: Date,
       default: Date.now,

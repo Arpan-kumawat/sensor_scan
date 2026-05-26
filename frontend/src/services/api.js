@@ -51,6 +51,11 @@ export const createSensor = async (payload) => {
   return data;
 };
 
+export const updateSensor = async (id, payload) => {
+  const { data } = await api.patch(`/sensors/${id}`, payload);
+  return data;
+};
+
 export const deleteSensor = async (id) => {
   const { data } = await api.delete(`/sensors/${id}`);
   return data;
@@ -72,6 +77,11 @@ export const getGateways = async ({ page = 1, limit = 10, search = '' } = {}) =>
 
 export const createGateway = async (payload) => {
   const { data } = await api.post('/gateways', payload);
+  return data;
+};
+
+export const updateGateway = async (id, payload) => {
+  const { data } = await api.patch(`/gateways/${id}`, payload);
   return data;
 };
 
